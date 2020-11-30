@@ -21,16 +21,28 @@ class _MapaPageState extends State<MapaPage> {
 
   @override
   void dispose() {
-    context.read<MiUbicacionBloc>().iniciarSeguimiento();
+    context.read<MiUbicacionBloc>().cancelarSeguimiento();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     // context.watch<MiUbicacionBloc>().iniciarSeguimiento();
+    print('Click sobre algo');
+
     return Scaffold(
-      body: BlocBuilder<MiUbicacionBloc, MiUbicacionState>(
-        builder: (_, state) => crearMapa(state),
+      body: Stack(
+        children: [
+          BlocBuilder<MiUbicacionBloc, MiUbicacionState>(
+            builder: (_, state) => crearMapa(state),
+          ),
+          // TODO: hacer el toogle cuando estoy manualmente
+          Positioned(
+            top: 15.0,
+            child: SearchBar(),
+          ),
+          MarcadorManual(),
+        ],
       ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -53,23 +65,27 @@ class _MapaPageState extends State<MapaPage> {
       target: state.ubicacion,
       zoom: 16,
     );
-    return GoogleMap(
-      initialCameraPosition: cameraPosition,
-      myLocationEnabled: true,
-      myLocationButtonEnabled: false,
-      zoomControlsEnabled: false,
-      // onMapCreated: (GoogleMapController controller) =>
-      //     mapaBloc.initMapa(controller),
-      // esto es exactamente igual
-      onMapCreated: mapaBloc.initMapa,
-      onCameraMove: (cameraPosition) {
-        // cameraPosition.target = LatLng central del mapa
-        mapaBloc.add(OnMovioMapa(cameraPosition.target));
+    return BlocBuilder<MapaBloc, MapaState>(
+      builder: (context, _) {
+        return GoogleMap(
+          initialCameraPosition: cameraPosition,
+          myLocationEnabled: true,
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          // onMapCreated: (GoogleMapController controller) =>
+          //     mapaBloc.initMapa(controller),
+          // esto es exactamente igual
+          onMapCreated: mapaBloc.initMapa,
+          onCameraMove: (cameraPosition) {
+            // cameraPosition.target = LatLng central del mapa
+            mapaBloc.add(OnMovioMapa(cameraPosition.target));
+          },
+          onCameraIdle: () {
+            print('MAPA IDLE');
+          },
+          polylines: mapaBloc.state.polylines.values.toSet(),
+        );
       },
-      onCameraIdle: () {
-        print('MAPA IDLE');
-      },
-      polylines: mapaBloc.state.polylines.values.toSet(),
     );
   }
 }
